@@ -56,7 +56,7 @@ func main() {
 
 	// Generate and display QR code
 	browserURL := fmt.Sprintf("http://localhost:9090/s/%s#key=%s", tenantID, encodedKey)
-	slog.Info("QR code", "ascii", qrcode.GenerateASCII(browserURL))
+	fmt.Println("QR code", "ascii", qrcode.Generate(browserURL))
 	slog.Info("Tenant ID", "tenantID", tenantID)
 	slog.Info("Browser URL", "url", browserURL)
 

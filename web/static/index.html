@@ -458,7 +458,6 @@
                 document.getElementById('status').className = 'status disconnected';
                 setTimeout(connect, 2000);
             };
-            };
 
             ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
