@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -89,18 +89,18 @@ func (s *Service) Check(ctx context.Context, req *authv3.CheckRequest) (*authv3.
 	case approved := <-pendingReq.Response:
 		s.cleanup(reqID)
 		if approved {
-			log.Printf("Request %s approved: %s %s", reqID, pendingReq.Method, pendingReq.Path)
+			slog.Info("Request approved", "requestID", reqID, "method", pendingReq.Method, "path", pendingReq.Path)
 			return s.okResponse(), nil
 		}
-		log.Printf("Request %s denied: %s %s", reqID, pendingReq.Method, pendingReq.Path)
+		slog.Info("Request denied", "requestID", reqID, "method", pendingReq.Method, "path", pendingReq.Path)
 		return s.denyResponse("Access denied by user"), nil
 	case <-timeout.C:
 		s.cleanup(reqID)
-		log.Printf("Request %s timed out: %s %s", reqID, pendingReq.Method, pendingReq.Path)
+		slog.Info("Request timed out", "requestID", reqID, "method", pendingReq.Method, "path", pendingReq.Path)
 		return s.denyResponse("Authorization timeout"), nil
 	case <-ctx.Done():
 		s.cleanup(reqID)
-		log.Printf("Request %s cancelled: %s %s", reqID, pendingReq.Method, pendingReq.Path)
+		slog.Info("Request cancelled", "requestID", reqID, "method", pendingReq.Method, "path", pendingReq.Path)
 		return s.denyResponse("Request cancelled"), nil
 	}
 }
@@ -118,12 +118,12 @@ func (s *Service) processQueue() {
 		}
 
 		if err := s.relayClient.SendRequest(msg); err != nil {
-			log.Printf("Failed to send request to relay: %v", err)
+			slog.Error("Failed to send request to relay", "error", err)
 			pendingReq.Response <- false
 			continue
 		}
 
-		log.Printf("Sent encrypted request %s to relay", pendingReq.ID)
+		slog.Info("Sent encrypted request to relay", "requestID", pendingReq.ID)
 	}
 }
 
@@ -133,15 +133,15 @@ func (s *Service) HandleDecision(reqID string, approved bool) {
 	s.mu.RUnlock()
 
 	if !exists {
-		log.Printf("Request %s not found or already processed", reqID)
+		slog.Info("Request not found or already processed", "requestID", reqID)
 		return
 	}
 
 	select {
 	case pendingReq.Response <- approved:
-		log.Printf("Decision sent for request %s: approved=%v", reqID, approved)
+		slog.Info("Decision sent for request", "requestID", reqID, "approved", approved)
 	default:
-		log.Printf("Failed to send decision for request %s (channel full or closed)", reqID)
+		slog.Error("Failed to send decision for request (channel full or closed)", "requestID", reqID)
 	}
 }
 

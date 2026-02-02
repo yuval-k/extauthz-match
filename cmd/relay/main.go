@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,6 +12,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+	applog "github.com/yuval/extauth-match/internal/log"
 )
 
 var upgrader = websocket.Upgrader{
@@ -59,7 +60,7 @@ func (r *Relay) handleServerConnect(w http.ResponseWriter, req *http.Request) {
 
 	conn, err := upgrader.Upgrade(w, req, nil)
 	if err != nil {
-		log.Printf("Server upgrade failed for tenant %s: %v", tenantID, err)
+		slog.Error("Server upgrade failed", "tenantID", tenantID, "error", err)
 		return
 	}
 
@@ -68,7 +69,7 @@ func (r *Relay) handleServerConnect(w http.ResponseWriter, req *http.Request) {
 	tenant.server = conn
 	tenant.mu.Unlock()
 
-	log.Printf("Authz server connected for tenant: %s", tenantID)
+	slog.Info("Authz server connected", "tenantID", tenantID)
 
 	// Read from server and forward to client
 	go r.forwardServerToClient(tenant)
@@ -80,7 +81,7 @@ func (r *Relay) handleClientConnect(w http.ResponseWriter, req *http.Request) {
 
 	conn, err := upgrader.Upgrade(w, req, nil)
 	if err != nil {
-		log.Printf("Client upgrade failed for tenant %s: %v", tenantID, err)
+		slog.Error("Client upgrade failed", "tenantID", tenantID, "error", err)
 		return
 	}
 
@@ -94,7 +95,7 @@ func (r *Relay) handleClientConnect(w http.ResponseWriter, req *http.Request) {
 	tenant.client = conn
 	tenant.mu.Unlock()
 
-	log.Printf("Browser client connected for tenant: %s", tenantID)
+	slog.Info("Browser client connected", "tenantID", tenantID)
 
 	// Read from client and forward to server
 	go r.forwardClientToServer(tenant)
@@ -108,7 +109,7 @@ func (r *Relay) forwardServerToClient(tenant *Tenant) {
 			tenant.server = nil
 		}
 		tenant.mu.Unlock()
-		log.Printf("Authz server disconnected for tenant: %s", tenant.tenantID)
+		slog.Info("Authz server disconnected", "tenantID", tenant.tenantID)
 	}()
 
 	for {
@@ -123,7 +124,7 @@ func (r *Relay) forwardServerToClient(tenant *Tenant) {
 		messageType, message, err := server.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("Server read error for tenant %s: %v", tenant.tenantID, err)
+				slog.Error("Server read error", "tenantID", tenant.tenantID, "error", err)
 			}
 			return
 		}
@@ -135,9 +136,9 @@ func (r *Relay) forwardServerToClient(tenant *Tenant) {
 
 		if client != nil {
 			if err := client.WriteMessage(messageType, message); err != nil {
-				log.Printf("Failed to forward to client for tenant %s: %v", tenant.tenantID, err)
+				slog.Error("Failed to forward to client", "tenantID", tenant.tenantID, "error", err)
 			} else {
-				log.Printf("Forwarded %d bytes from server to client (tenant: %s)", len(message), tenant.tenantID)
+				slog.Info("Forwarded bytes from server to client", "bytes", len(message), "tenantID", tenant.tenantID)
 			}
 		}
 	}
@@ -151,7 +152,7 @@ func (r *Relay) forwardClientToServer(tenant *Tenant) {
 			tenant.client = nil
 		}
 		tenant.mu.Unlock()
-		log.Printf("Browser client disconnected for tenant: %s", tenant.tenantID)
+		slog.Info("Browser client disconnected", "tenantID", tenant.tenantID)
 	}()
 
 	for {
@@ -166,7 +167,7 @@ func (r *Relay) forwardClientToServer(tenant *Tenant) {
 		messageType, message, err := client.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("Client read error for tenant %s: %v", tenant.tenantID, err)
+				slog.Error("Client read error", "tenantID", tenant.tenantID, "error", err)
 			}
 			return
 		}
@@ -178,15 +179,17 @@ func (r *Relay) forwardClientToServer(tenant *Tenant) {
 
 		if server != nil {
 			if err := server.WriteMessage(messageType, message); err != nil {
-				log.Printf("Failed to forward to server for tenant %s: %v", tenant.tenantID, err)
+				slog.Error("Failed to forward to server", "tenantID", tenant.tenantID, "error", err)
 			} else {
-				log.Printf("Forwarded %d bytes from client to server (tenant: %s)", len(message), tenant.tenantID)
+				slog.Info("Forwarded bytes from client to server", "bytes", len(message), "tenantID", tenant.tenantID)
 			}
 		}
 	}
 }
 
 func main() {
+	applog.SetupLogging()
+
 	relay := NewRelay()
 
 	router := mux.NewRouter()
@@ -204,9 +207,10 @@ func main() {
 	}
 
 	go func() {
-		log.Println("Relay server listening on :9090")
+		slog.Info("Relay server listening", "address", ":9090")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start relay server: %v", err)
+			slog.Error("Failed to start relay server", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -215,10 +219,10 @@ func main() {
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
 
-	log.Println("Shutting down relay server...")
+	slog.Info("Shutting down relay server...")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	server.Shutdown(ctx)
-	log.Println("Relay server shutdown complete")
+	slog.Info("Relay server shutdown complete")
 }

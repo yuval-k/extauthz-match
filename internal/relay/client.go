@@ -3,7 +3,7 @@ package relay
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -52,7 +52,7 @@ func (c *Client) Connect() error {
 		return fmt.Errorf("failed to connect to relay: %w", err)
 	}
 
-	log.Printf("Connected to relay as server (tenant: %s)", c.tenantID)
+	slog.Info("Connected to relay as server", "tenantID", c.tenantID)
 
 	// Start reading messages from relay
 	go c.readMessages()
@@ -99,7 +99,7 @@ func (c *Client) readMessages() {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("Relay connection error: %v", err)
+				slog.Error("Relay connection error", "error", err)
 			}
 			return
 		}
@@ -107,7 +107,7 @@ func (c *Client) readMessages() {
 		// Decrypt message
 		plaintext, err := crypto.Decrypt(c.encryptionKey, message)
 		if err != nil {
-			log.Printf("Failed to decrypt message: %v", err)
+			slog.Error("Failed to decrypt message", "error", err)
 			continue
 		}
 
@@ -118,7 +118,7 @@ func (c *Client) readMessages() {
 		}
 
 		if err := json.Unmarshal(plaintext, &decision); err != nil {
-			log.Printf("Failed to unmarshal decision: %v", err)
+			slog.Error("Failed to unmarshal decision", "error", err)
 			continue
 		}
 

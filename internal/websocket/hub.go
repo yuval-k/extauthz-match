@@ -1,7 +1,7 @@
 package websocket
 
 import (
-	"log"
+	"log/slog"
 	"sync"
 )
 
@@ -34,14 +34,14 @@ func (h *Hub) Run() {
 			h.mu.Lock()
 			h.clients[client] = true
 			h.mu.Unlock()
-			log.Printf("Client registered, total clients: %d", len(h.clients))
+			slog.Info("Client registered", "totalClients", len(h.clients))
 
 		case client := <-h.unregister:
 			h.mu.Lock()
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.send)
-				log.Printf("Client unregistered, total clients: %d", len(h.clients))
+				slog.Info("Client unregistered", "totalClients", len(h.clients))
 			}
 			h.mu.Unlock()
 

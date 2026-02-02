@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ExtAuth Match - Swipe to Authorize</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .status {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .status.connected {
+            color: #4ade80;
+        }
+
+        .status.disconnected {
+            color: #f87171;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .card-stack {
+            width: 100%;
+            max-width: 400px;
+            height: 500px;
+            position: relative;
+        }
+
+        .card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        .card.dragging {
+            cursor: grabbing;
+            transition: none;
+        }
+
+        .card.swiped {
+            transition: transform 0.5s ease, opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        .card-content {
+            padding: 30px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .method {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            width: fit-content;
+        }
+
+        .method.GET { background: #dbeafe; color: #1e40af; }
+        .method.POST { background: #dcfce7; color: #166534; }
+        .method.PUT { background: #fef3c7; color: #92400e; }
+        .method.DELETE { background: #fee2e2; color: #991b1b; }
+        .method.PATCH { background: #f3e8ff; color: #6b21a8; }
+
+        .path {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 20px;
+            word-break: break-all;
+        }
+
+        .details {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .detail-item {
+            margin-bottom: 15px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            color: #374151;
+            font-family: 'Monaco', 'Courier New', monospace;
+            word-break: break-all;
+        }
+
+        .headers {
+            background: #f9fafb;
+            padding: 10px;
+            border-radius: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            padding: 40px;
+        }
+
+        .empty-state h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
+        .swipe-indicator {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 80px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .swipe-indicator.left {
+            left: 30px;
+            color: #ef4444;
+        }
+
+        .swipe-indicator.right {
+            right: 30px;
+            color: #22c55e;
+        }
+
+        .swipe-indicator.visible {
+            opacity: 0.8;
+        }
+
+        .actions {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 30px;
+        }
+
+        .action-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: none;
+            font-size: 32px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .action-btn.deny {
+            background: #ef4444;
+            color: white;
+        }
+
+        .action-btn.approve {
+            background: #22c55e;
+            color: white;
+        }
+
+        .empty-instructions {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.95);
+            max-width: 500px;
+            line-height: 1.6;
+        }
+
+        .empty-instructions h2 {
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+
+        .empty-instructions p {
+            font-size: 16px;
+            margin-bottom: 20px;
+            opacity: 0.95;
+        }
+
+        .command-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            text-align: left;
+            border-left: 3px solid #4ade80;
+            word-break: break-all;
+        }
+
+        .command-label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 480px) {
+            .card-stack {
+                height: 450px;
+            }
+            
+            .card-content {
+                padding: 20px;
+            }
+
+            .actions {
+                bottom: 30px;
+            }
+
+            .action-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔐 ExtAuth Match</h1>
+        <div class="status" id="status">Connecting...</div>
+    </div>
+
+    <div class="container">
+        <div class="swipe-indicator left" id="swipeLeft">✗</div>
+        <div class="swipe-indicator right" id="swipeRight">✓</div>
+        
+        <div class="card-stack" id="cardStack">
+            <div class="empty-instructions">
+                <h2>👀 Waiting for requests...</h2>
+                <p>Send a request to your Envoy proxy to see it here</p>
+                <div class="command-box">
+                    <div class="command-label">Try this:</div>
+                    curl http://localhost:10000/
+                </div>
+                <p style="font-size: 14px; opacity: 0.8; margin-top: 20px;">or run the test script: ./test.sh</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="action-btn deny" id="denyBtn" onclick="handleDeny()" disabled>✗</button>
+        <button class="action-btn approve" id="approveBtn" onclick="handleApprove()" disabled>✓</button>
+    </div>
+
+    <script>
+        let ws = null;
+        let currentCard = null;
+        let pendingRequests = [];
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let currentX = 0;
+        let currentY = 0;
+        let encryptionKey = null;
+        let tenantID = null;
+
+        // Extract encryption key and tenant ID from URL
+        function initialize() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const keyB64 = params.get('key');
+            
+            if (!keyB64) {
+                document.getElementById('status').textContent = '✗ No encryption key in URL';
+                document.getElementById('status').className = 'status disconnected';
+                return false;
+            }
+
+            try {
+                // Decode base64 key
+                const keyStr = atob(keyB64.replace(/-/g, '+').replace(/_/g, '/'));
+                encryptionKey = new Uint8Array(keyStr.length);
+                for (let i = 0; i < keyStr.length; i++) {
+                    encryptionKey[i] = keyStr.charCodeAt(i);
+                }
+
+                // Extract tenant ID from path
+                const pathParts = window.location.pathname.split('/');
+                tenantID = pathParts[pathParts.length - 1];
+
+                console.log('Initialized with tenant:', tenantID);
+                return true;
+            } catch (e) {
+                console.error('Failed to parse encryption key:', e);
+                document.getElementById('status').textContent = '✗ Invalid encryption key';
+                document.getElementById('status').className = 'status disconnected';
+                return false;
+            }
+        }
+
+        // AES-GCM encryption/decryption
+        async function importKey() {
+            return await crypto.subtle.importKey(
+                'raw',
+                encryptionKey,
+                { name: 'AES-GCM' },
+                false,
+                ['encrypt', 'decrypt']
+            );
+        }
+
+        async function decrypt(ciphertext) {
+            const key = await importKey();
+            const data = new Uint8Array(ciphertext);
+            
+            // Extract nonce (first 12 bytes)
+            const nonce = data.slice(0, 12);
+            const encrypted = data.slice(12);
+
+            const decrypted = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv: nonce },
+                key,
+                encrypted
+            );
+
+            const decoder = new TextDecoder();
+            return JSON.parse(decoder.decode(decrypted));
+        }
+
+        async function encrypt(obj) {
+            const key = await importKey();
+            const encoder = new TextEncoder();
+            const data = encoder.encode(JSON.stringify(obj));
+            
+            // Generate random nonce
+            const nonce = crypto.getRandomValues(new Uint8Array(12));
+
+            const encrypted = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv: nonce },
+                key,
+                data
+            );
+
+            // Prepend nonce to ciphertext
+            const result = new Uint8Array(nonce.length + encrypted.byteLength);
+            result.set(nonce, 0);
+            result.set(new Uint8Array(encrypted), nonce.length);
+
+            return result;
+        }
+
+        function updateButtonState() {
+            const hasRequest = currentCard !== null;
+            document.getElementById('denyBtn').disabled = !hasRequest;
+            document.getElementById('approveBtn').disabled = !hasRequest;
+        }
+
+        function connect() {
+            if (!initialize()) {
+                return;
+            }
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/client/${tenantID}`;
+            
+            ws = new WebSocket(wsUrl);
+            ws.binaryType = 'arraybuffer';
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                document.getElementById('status').textContent = '✓ Connected';
+                document.getElementById('status').className = 'status connected';
+            };
+
+            ws.onmessage = async (event) => {
+                try {
+                    // Decrypt message
+                    const request = await decrypt(event.data);
+                    console.log('Received request:', request);
+                    pendingRequests.push(request);
+                    if (!currentCard) {
+                        showNextCard();
+                    }
+                } catch (e) {
+                    console.error('Failed to decrypt message:', e);
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                document.getElementById('status').textContent = '✗ Disconnected';
+                document.getElementById('status').className = 'status disconnected';
+                setTimeout(connect, 2000);
+            };
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        function showNextCard() {
+            if (pendingRequests.length === 0) {
+                currentCard = null;
+                document.getElementById('cardStack').innerHTML = `
+                    <div class="empty-instructions">
+                        <h2>👀 Waiting for requests...</h2>
+                        <p>Send a request to your Envoy proxy to see it here</p>
+                        <div class="command-box">
+                            <div class="command-label">Try this:</div>
+                            curl http://localhost:10000/
+                        </div>
+                        <p style="font-size: 14px; opacity: 0.8; margin-top: 20px;">or run the test script: ./test.sh</p>
+                    </div>
+                `;
+                updateButtonState();
+                return;
+            }
+
+            const request = pendingRequests[0];
+            currentCard = request;
+
+            const headersHtml = Object.entries(request.headers || {})
+                .map(([key, value]) => `<div><strong>${key}:</strong> ${value}</div>`)
+                .join('');
+
+            const cardHtml = `
+                <div class="card" id="currentCard">
+                    <div class="card-content">
+                        <div class="method ${request.method}">${request.method}</div>
+                        <div class="path">${request.path}</div>
+                        <div class="details">
+                            <div class="detail-item">
+                                <div class="detail-label">Source IP</div>
+                                <div class="detail-value">${request.sourceIP || 'N/A'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Timestamp</div>
+                                <div class="detail-value">${new Date(request.timestamp).toLocaleString()}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Headers</div>
+                                <div class="headers">${headersHtml || 'None'}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('cardStack').innerHTML = cardHtml;
+            const card = document.getElementById('currentCard');
+            setupCardListeners(card);
+            updateButtonState();
+        }
+
+        function setupCardListeners(card) {
+            card.addEventListener('mousedown', handleStart);
+            card.addEventListener('touchstart', handleStart);
+            document.addEventListener('mousemove', handleMove);
+            document.addEventListener('touchmove', handleMove);
+            document.addEventListener('mouseup', handleEnd);
+            document.addEventListener('touchend', handleEnd);
+        }
+
+        function handleStart(e) {
+            isDragging = true;
+            const card = document.getElementById('currentCard');
+            if (card) {
+                card.classList.add('dragging');
+            }
+
+            if (e.type === 'touchstart') {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            } else {
+                startX = e.clientX;
+                startY = e.clientY;
+            }
+        }
+
+        function handleMove(e) {
+            if (!isDragging) return;
+
+            e.preventDefault();
+            
+            if (e.type === 'touchmove') {
+                currentX = e.touches[0].clientX - startX;
+                currentY = e.touches[0].clientY - startY;
+            } else {
+                currentX = e.clientX - startX;
+                currentY = e.clientY - startY;
+            }
+
+            const card = document.getElementById('currentCard');
+            if (card) {
+                const rotation = currentX / 20;
+                card.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rotation}deg)`;
+                card.style.opacity = 1 - Math.abs(currentX) / 300;
+
+                const leftIndicator = document.getElementById('swipeLeft');
+                const rightIndicator = document.getElementById('swipeRight');
+
+                if (currentX < -50) {
+                    leftIndicator.classList.add('visible');
+                    rightIndicator.classList.remove('visible');
+                } else if (currentX > 50) {
+                    rightIndicator.classList.add('visible');
+                    leftIndicator.classList.remove('visible');
+                } else {
+                    leftIndicator.classList.remove('visible');
+                    rightIndicator.classList.remove('visible');
+                }
+            }
+        }
+
+        function handleEnd() {
+            if (!isDragging) return;
+            isDragging = false;
+
+            const card = document.getElementById('currentCard');
+            if (card) {
+                card.classList.remove('dragging');
+            }
+
+            const leftIndicator = document.getElementById('swipeLeft');
+            const rightIndicator = document.getElementById('swipeRight');
+            leftIndicator.classList.remove('visible');
+            rightIndicator.classList.remove('visible');
+
+            if (Math.abs(currentX) > 100) {
+                if (currentX > 0) {
+                    swipeCard(true);
+                } else {
+                    swipeCard(false);
+                }
+            } else {
+                // Reset card position
+                if (card) {
+                    card.style.transform = '';
+                    card.style.opacity = '';
+                }
+            }
+
+            currentX = 0;
+            currentY = 0;
+        }
+
+        function swipeCard(approved) {
+            const card = document.getElementById('currentCard');
+            if (!card || !currentCard) return;
+
+            card.classList.add('swiped');
+            const direction = approved ? 1000 : -1000;
+            card.style.transform = `translateX(${direction}px) rotate(${direction / 10}deg)`;
+            card.style.opacity = '0';
+
+            sendDecision(currentCard.id, approved);
+
+            setTimeout(() => {
+                pendingRequests.shift();
+                showNextCard();
+            }, 500);
+        }
+
+        function handleApprove() {
+            swipeCard(true);
+        }
+
+        function handleDeny() {
+            swipeCard(false);
+        }
+
+        async function sendDecision(requestId, approved) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                try {
+                    const decision = {
+                        requestId: requestId,
+                        approved: approved
+                    };
+                    const encrypted = await encrypt(decision);
+                    ws.send(encrypted);
+                    console.log(`Sent encrypted decision for ${requestId}: ${approved ? 'approved' : 'denied'}`);
+                } catch (e) {
+                    console.error('Failed to encrypt decision:', e);
+                }
+            }
+        }
+
+        connect();
+    </script>
+</body>
+</html>
