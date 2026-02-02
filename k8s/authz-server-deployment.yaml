@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extauth-server
+  labels:
+    app: extauth-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: extauth-server
+  template:
+    metadata:
+      labels:
+        app: extauth-server
+    spec:
+      containers:
+        - name: extauth-server
+          image: gcr.io/solo-public/extauth-server:0.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RELAY_URL
+              value: wss://extauth-relay-1066515080967.us-central1.run.app
+            - name: BROWSER_BASE_URL
+              value: https://extauth-relay-1066515080967.us-central1.run.app
+          ports:
+            - name: grpc
+              containerPort: 9000
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: extauth-server
+  labels:
+    app: extauth-server
+spec:
+  selector:
+    app: extauth-server
+  ports:
+    - name: grpc
+      port: 9000
+      targetPort: grpc
+  type: ClusterIP

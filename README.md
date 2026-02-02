@@ -117,6 +117,40 @@ The relay server can be deployed to any cloud provider with public access:
 3. Run `docker compose up` locally
 4. QR code will contain public relay URL for mobile access
 
+### Deploy Relay Server to Cloud Run (recommended)
+
+Cloud Run gives you HTTPS by default on a `*.run.app` URL, and you can add a custom domain later.
+
+1. **Authenticate and select a project:**
+   ```bash
+   gcloud auth login
+   gcloud config set project YOUR_PROJECT_ID
+   ```
+
+2. **Deploy the relay container:**
+   ```bash
+   PROJECT_ID=YOUR_PROJECT_ID bash scripts/deploy-cloud-run.sh
+   ```
+
+3. **Get the public URL:**
+   ```bash
+   gcloud run services describe extauth-relay --region us-central1 --format='value(status.url)'
+   ```
+
+4. **Point your authz server to the public relay:**
+   - Use `wss://` for the WebSocket URL.
+   - Set `BROWSER_BASE_URL` so the QR code points to HTTPS.
+
+   ```bash
+   export RELAY_URL=wss://YOUR_SERVICE_URL
+   export BROWSER_BASE_URL=https://YOUR_SERVICE_URL
+   docker compose up
+   ```
+
+Notes:
+- The relay listens on the port provided by Cloud Run via `PORT` (set in the deploy script).
+- If you rename the service or change regions, adjust the script variables.
+
 ## Development
 
 ```bash

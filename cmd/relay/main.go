@@ -201,8 +201,13 @@ func main() {
 		http.ServeFile(w, r, "./web/static/index.html")
 	})
 
+	bindAddr := ":9090"
+	if envPort := os.Getenv("PORT"); envPort != "" {
+		bindAddr = ":" + envPort
+	}
+
 	server := &http.Server{
-		Addr:    ":9090",
+		Addr:    bindAddr,
 		Handler: router,
 	}
 
