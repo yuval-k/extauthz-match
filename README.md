@@ -12,24 +12,61 @@ A demo project that implements Envoy's external authorization (ext_authz) gRPC i
 - 🐳 **One-command setup** - Complete Docker Compose stack
 - ⏱️ **30s timeout** - Auto-deny for requests awaiting approval too long
 
-## Quick Start
+## Quick Start - Local Deployment
 
 1. **Start everything:**
    ```bash
    docker compose up
    ```
 
-2. **Scan the QR code** displayed in the terminal:
-   - The authz server will display an ASCII QR code with a URL
-   - Open this URL on your phone or browser
-   - The encryption key is embedded in the URL fragment (after #) and never sent to the server
+2. **Open swipe UI** Open the url from the logs in your browser to see the swipe UI.
 
 3. **Make a request to the protected backend:**
    ```bash
    curl http://localhost:10000/
    ```
 
-4. **Swipe right (✓) to approve or left (✗) to deny!**
+## Quick Start - Kubernetes Deployment (no need to clone repo)
+
+Install agentgateway (can work with other gateways that support ext_authz too):
+
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml
+
+helm upgrade -i --create-namespace \
+  --namespace agentgateway-system \
+  --version v2.2.0-main agentgateway-crds oci://ghcr.io/kgateway-dev/charts/agentgateway-crds 
+
+helm upgrade -i -n agentgateway-system agentgateway oci://ghcr.io/kgateway-dev/charts/agentgateway \
+--version v2.2.0-main
+```
+
+1. **Apply the Kubernetes manifests:**
+
+```bash
+# backend html files configmap
+kubectl create configmap backend-html \
+  --from-file=index.html=<(curl -SsL "https://raw.githubusercontent.com/yuval-k/extauthz-match/refs/heads/master/backend/index.html") \
+  --from-file=script.js=<(curl -SsL "https://raw.githubusercontent.com/yuval-k/extauthz-match/refs/heads/master/backend/script.js") \
+  --from-file=style.css=<(curl -SsL "https://raw.githubusercontent.com/yuval-k/extauthz-match/refs/heads/master/backend/style.css")
+
+# Apply gateway,http route and policies to setup extauth
+kubectl apply -f "https://raw.githubusercontent.com/yuval-k/extauthz-match/refs/heads/master/k8s/allinone.yaml"
+```
+
+2. **Scan the QR code** displayed in the the logs `kubectl logs deployment/extauth-server`:
+   - The authz server will display an ASCII QR code with a URL
+   - Open this URL on your phone or browser
+   - The encryption key is embedded in the URL fragment (after #) and never sent to the server
+
+3. **Make a request to the protected backend:**
+
+```bash
+kubectl port-forward svc/extauth-gateway 8080
+curl http://localhost:8080/ # or open this in the browser
+```
+
+1. **Swipe right (✓) to approve or left (✗) to deny!**
 
 ## Architecture
 
@@ -50,7 +87,7 @@ A demo project that implements Envoy's external authorization (ext_authz) gRPC i
                                              └──────▲───────┘
                                                     │
 ┌─────────────┐         ┌──────────────────┐       │ ext_authz
-│   Client    │────────▶│  Envoy Proxy     │───────┘ gRPC
+│   Client    │────────▶│  AGW Proxy       │───────┘ gRPC
 │             │         │  (Port 10000)    │
 └─────────────┘         └────────┬─────────┘
                                  │
