@@ -35,10 +35,10 @@ kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/downloa
 
 helm upgrade -i --create-namespace \
   --namespace agentgateway-system \
-  --version v2.2.0-main agentgateway-crds oci://ghcr.io/kgateway-dev/charts/agentgateway-crds 
+  --version v2.2.0 agentgateway-crds oci://ghcr.io/kgateway-dev/charts/agentgateway-crds 
 
 helm upgrade -i -n agentgateway-system agentgateway oci://ghcr.io/kgateway-dev/charts/agentgateway \
---version v2.2.0-main
+--version v2.2.0
 ```
 
 1. **Apply the Kubernetes manifests:**
