@@ -35,6 +35,15 @@ func main() {
 	tenantID := crypto.DeriveTenantID(encryptionKey)
 	encodedKey := crypto.EncodeKey(encryptionKey)
 
+	// Get browser base URL from environment or use default
+	browserBaseURL := os.Getenv("BROWSER_BASE_URL")
+	if browserBaseURL == "" {
+		browserBaseURL = "http://localhost:9090"
+	}
+	// Generate and display QR code. do this first, so it doesn't mix with log lines
+	browserURL := fmt.Sprintf("%s/s/%s#key=%s", browserBaseURL, tenantID, encodedKey)
+	fmt.Println("QR code", "ascii", qrcode.Generate(browserURL))
+
 	// Get relay URL from environment or use default
 	relayURL := os.Getenv("RELAY_URL")
 	if relayURL == "" {
@@ -60,15 +69,6 @@ func main() {
 	// Set decision handler
 	relayClient.SetDecisionHandler(authService.HandleDecision)
 
-	// Get browser base URL from environment or use default
-	browserBaseURL := os.Getenv("BROWSER_BASE_URL")
-	if browserBaseURL == "" {
-		browserBaseURL = "http://localhost:9090"
-	}
-
-	// Generate and display QR code
-	browserURL := fmt.Sprintf("%s/s/%s#key=%s", browserBaseURL, tenantID, encodedKey)
-	fmt.Println("QR code", "ascii", qrcode.Generate(browserURL))
 	slog.Info("Tenant ID", "tenantID", tenantID)
 	slog.Info("Browser URL", "url", browserURL)
 
