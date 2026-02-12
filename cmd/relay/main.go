@@ -28,6 +28,7 @@ type Tenant struct {
 	server   *websocket.Conn
 	client   *websocket.Conn
 	mu       sync.RWMutex
+	writeMu  sync.Mutex // Protects writes to client
 }
 
 type Relay struct {
@@ -85,17 +86,28 @@ func (r *Relay) handleClientConnect(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// Set up ping/pong handlers for keepalive
+	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	conn.SetPongHandler(func(string) error {
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		return nil
+	})
+
 	tenant := r.getTenant(tenantID)
 	tenant.mu.Lock()
 
 	// Disconnect existing client if any
 	if tenant.client != nil {
+		slog.Info("Existing browser client found, disconnecting", "tenantID", tenantID)
 		tenant.client.Close()
 	}
 	tenant.client = conn
 	tenant.mu.Unlock()
 
 	slog.Info("Browser client connected", "tenantID", tenantID)
+
+	// Start ping ticker
+	go r.pingClient(tenant)
 
 	// Read from client and forward to server
 	go r.forwardClientToServer(tenant)
@@ -135,7 +147,11 @@ func (r *Relay) forwardServerToClient(tenant *Tenant) {
 		tenant.mu.RUnlock()
 
 		if client != nil {
-			if err := client.WriteMessage(messageType, message); err != nil {
+			tenant.writeMu.Lock()
+			err := client.WriteMessage(messageType, message)
+			tenant.writeMu.Unlock()
+
+			if err != nil {
 				slog.Error("Failed to forward to client", "tenantID", tenant.tenantID, "error", err)
 			} else {
 				slog.Info("Forwarded bytes from server to client", "bytes", len(message), "tenantID", tenant.tenantID)
@@ -183,6 +199,31 @@ func (r *Relay) forwardClientToServer(tenant *Tenant) {
 			} else {
 				slog.Info("Forwarded bytes from client to server", "bytes", len(message), "tenantID", tenant.tenantID)
 			}
+		}
+	}
+}
+
+// pingClient sends periodic pings to keep the WebSocket connection alive
+func (r *Relay) pingClient(tenant *Tenant) {
+	ticker := time.NewTicker(25 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		tenant.mu.RLock()
+		client := tenant.client
+		tenant.mu.RUnlock()
+
+		if client == nil {
+			return
+		}
+
+		tenant.writeMu.Lock()
+		err := client.WriteMessage(websocket.PingMessage, nil)
+		tenant.writeMu.Unlock()
+
+		if err != nil {
+			slog.Warn("Failed to send ping to client", "tenantID", tenant.tenantID, "error", err)
+			return
 		}
 	}
 }

@@ -18,6 +18,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "9000:9000"  # gRPC ext_authz service
+      - "8080:8080"  # HTTP endpoint for browser URL
     networks:
       - extauth-network
     environment:

@@ -13,27 +13,43 @@
             <h1>It's a Match!</h1>
         </div>
 
-        <div class="subtitle">Someone liked your request!</div>
+        <div class="subtitle">Watch the magic happen! ✨</div>
 
         <div class="content">
             <div class="section">
                 <h2>
-                    <span>💖 Authorization Status</span>
-                    <span class="badge">MATCHED</span>
+                    <span>📱 Connect Your Phone</span>
+                    <span class="badge">SCAN ME</span>
                 </h2>
-                <p>Your request was swiped right! You've been matched with access to this protected service.</p>
+                <p>Scan this QR code or tap the link to open the swipe interface on your phone:</p>
+                <div id="qrSection" class="qr-section">
+                    <div id="qrCode" class="qr-code"></div>
+                    <a id="browserLink" href="#" target="_blank" class="browser-link">Open on this device</a>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>
+                    <span>📱 Try It Out</span>
+                    <span class="badge">INTERACTIVE</span>
+                </h2>
+                <p>This page will automatically make 5 protected requests below. Each one needs your approval!</p>
                 <div class="status">
                     <div class="status-item">
-                        <span class="checkmark">❤️</span>
-                        User liked your request
+                        <span class="checkmark">👀</span>
+                        Check your phone for incoming requests
                     </div>
                     <div class="status-item">
-                        <span class="checkmark">❤️</span>
-                        Swipe right approved
+                        <span class="checkmark">👆</span>
+                        Swipe right ❤️ to approve or left ❌ to deny
                     </div>
                     <div class="status-item">
-                        <span class="checkmark">❤️</span>
-                        Access granted
+                        <span class="checkmark">🎯</span>
+                        Watch them update in real-time below!
+                    </div>
+                    <div class="status-item">
+                        <span class="checkmark">🔄</span>
+                        <em>Not seeing requests? <button id="tryAgainBtn" class="try-again-btn">Try Again</button></em>
                     </div>
                 </div>
             </div>
@@ -43,23 +59,23 @@
                 <p>Watch as your requests get matched in real-time:</p>
                 <div id="matchHistory" class="match-history">
                     <div class="match-item pending">
-                        <span class="match-label">Request 1</span>
+                        <span class="match-label">💌 /api/love-letter.json</span>
                         <span class="match-result" data-index="0">⏳</span>
                     </div>
                     <div class="match-item pending">
-                        <span class="match-label">Request 2</span>
+                        <span class="match-label">💖 /api/heart.json</span>
                         <span class="match-result" data-index="1">⏳</span>
                     </div>
                     <div class="match-item pending">
-                        <span class="match-label">Request 3</span>
+                        <span class="match-label">💅 /css/valentine.css</span>
                         <span class="match-result" data-index="2">⏳</span>
                     </div>
                     <div class="match-item pending">
-                        <span class="match-label">Request 4</span>
+                        <span class="match-label">💘 /js/cupid.js</span>
                         <span class="match-result" data-index="3">⏳</span>
                     </div>
                     <div class="match-item pending">
-                        <span class="match-label">Request 5</span>
+                        <span class="match-label">🌹 /img/rose.png</span>
                         <span class="match-result" data-index="4">⏳</span>
                     </div>
                 </div>
@@ -71,24 +87,11 @@
             </div>
 
             <div class="section">
-                <h2>🎨 Valentine's Resources</h2>
-                <p>The following love letters are being delivered through your matched connection:</p>
-                <div class="images">
-                    <div class="image-card">💌</div>
-                    <div class="image-card">🌹</div>
-                    <div class="image-card">🍫</div>
-                    <div class="image-card">💐</div>
-                    <div class="image-card">🎁</div>
-                    <div class="image-card">💍</div>
-                </div>
-            </div>
-
-            <div class="section">
                 <h2>💘 How It Works</h2>
                 <ol style="color: #6b7280; font-size: 14px; line-height: 1.8;">
-                    <li>Client sends request to Envoy proxy (port 10000)</li>
-                    <li>Envoy asks: "Does someone like this request?"</li>
-                    <li>Auth service sends your profile to the mobile app</li>
+                    <li>Client sends request to the gateway</li>
+                    <li>Gateway asks: "Does someone like this request?"</li>
+                    <li>Auth service sends the request profile to the mobile app</li>
                     <li>User swipes right ❤️ to match or left ❌ to pass</li>
                     <li>If matched: Request succeeds (200 OK) 💕</li>
                     <li>If passed: Request denied (403) 💔</li>
@@ -101,6 +104,7 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="/script.js"></script>
 </body>
 </html>

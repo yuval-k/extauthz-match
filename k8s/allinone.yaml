@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: extauth-server
-          image: gcr.io/solo-public/extauth-server:0.5
+          image: gcr.io/solo-public/extauth-server:0.6
           imagePullPolicy: IfNotPresent
           env:
             - name: LOG_LEVEL
@@ -28,6 +28,8 @@ spec:
           ports:
             - name: grpc
               containerPort: 9000
+            - name: http
+              containerPort: 8080
           resources:
             requests:
               cpu: 50m
@@ -50,6 +52,9 @@ spec:
     - name: grpc
       port: 9000
       targetPort: grpc
+    - name: http
+      port: 8080
+      targetPort: http
   type: ClusterIP
 ---
 apiVersion: agentgateway.dev/v1alpha1
@@ -100,6 +105,24 @@ spec:
       allowedRoutes:
         namespaces:
           from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: browserurl-route
+  labels:
+    app: browserurl-route
+spec:
+  parentRefs:
+    - name: extauth-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /browserurl
+      backendRefs:
+        - name: extauth-server
+          port: 8080
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

@@ -220,3 +220,75 @@ h1 {
     color: #9ca3af;
     font-size: 18px;
 }
+
+/* QR Code Section */
+.qr-section {
+    background: #fef2f2;
+    border-radius: 12px;
+    padding: 25px;
+    margin-top: 15px;
+    text-align: center;
+}
+
+.qr-code {
+    background: white;
+    border: 3px solid #ec4899;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 15px auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 280px;
+}
+
+.qr-code img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.browser-link {
+    display: inline-block;
+    background: #ec4899;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-top: 15px;
+    transition: background 0.3s ease;
+}
+
+.browser-link:hover {
+    background: #be185d;
+}
+
+/* Try Again Button */
+.try-again-btn {
+    background: #ec4899;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.1s ease;
+    margin-left: 5px;
+}
+
+.try-again-btn:hover {
+    background: #be185d;
+    transform: translateY(-1px);
+}
+
+.try-again-btn:active {
+    transform: translateY(0);
+}
+
+.try-again-btn:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+}

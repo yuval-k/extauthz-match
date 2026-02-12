@@ -1,9 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -71,6 +73,23 @@ func main() {
 
 	slog.Info("Tenant ID", "tenantID", tenantID)
 	slog.Info("Browser URL", "url", browserURL)
+
+	// Start HTTP server for /browserurl endpoint
+	http.HandleFunc("/browserurl", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		json.NewEncoder(w).Encode(map[string]string{
+			"url": browserURL,
+		})
+	})
+
+	go func() {
+		slog.Info("HTTP server listening", "address", ":8080")
+		if err := http.ListenAndServe(":8080", nil); err != nil {
+			slog.Error("Failed to serve HTTP", "error", err)
+			os.Exit(1)
+		}
+	}()
 
 	// Start gRPC server for ext_authz
 	grpcServer := grpc.NewServer()
