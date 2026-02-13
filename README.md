@@ -63,7 +63,7 @@ kubectl apply -f "https://raw.githubusercontent.com/yuval-k/extauthz-match/refs/
 
 ```bash
 kubectl port-forward svc/extauth-gateway 8080 &
-curl http://localhost:8080/ # or open this in the browser
+open http://localhost:8080/ # open this in the browser
 ```
 
 1. **Swipe right (✓) to approve or left (✗) to deny!**
