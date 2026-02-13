@@ -516,10 +516,10 @@
         <div class="card-stack" id="cardStack">
             <div class="empty-instructions">
                 <h2>👀 Waiting for requests...</h2>
-                <p>Send a request to your Envoy proxy to see it here</p>
+                <p>Open the the Gateway URL in the browser and see the requests to authorize appear here</p>
                 <div class="command-box">
                     <div class="command-label">Example:</div>
-                    <span id="curlExample">curl http://your-envoy-host:10000/</span>
+                    <span id="curlExample">open http://localhost:8080/</span>
                 </div>
                 <p style="font-size: 14px; opacity: 0.8; margin-top: 15px;">
                     Swipe right or press <kbd style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">Y</kbd> to approve
@@ -541,10 +541,10 @@
             <h2>🔐 ExtAuth Match</h2>
             <p><strong>Version 1.0.0</strong></p>
             
-            <p>ExtAuth Match is a mobile-friendly authorization interface for Envoy's external authorization (ext_authz) system. Review and approve/deny API requests in real-time with a swipe interface.</p>
+            <p>ExtAuth Match is a mobile-friendly authorization interface for agentgateway's external authorization (ext_authz) support. Review and approve/deny API requests in real-time with a swipe interface.</p>
             
             <h3>How It Works</h3>
-            <p>When a client makes a request through your Envoy proxy, it appears as a card in this interface. You can:</p>
+            <p>When a client makes a request through your agentgateway proxy, it appears as a card in this interface. You can:</p>
             <ul>
                 <li>Swipe right (or click ✓) to approve</li>
                 <li>Swipe left (or click ✗) to deny</li>
