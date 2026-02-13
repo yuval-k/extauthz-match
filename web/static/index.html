@@ -521,6 +521,9 @@
                     <div class="command-label">Example:</div>
                     <span id="curlExample">open http://localhost:8080/</span>
                 </div>
+                <p style="font-size: 14px; opacity: 0.9; margin-top: 15px; background: rgba(255,255,255,0.15); padding: 12px; border-radius: 8px; border-left: 3px solid #4ade80;">
+                    💡 <strong>Tip:</strong> If you already loaded the Gateway page before opening this swipe UI, refresh the Gateway page or click "Try Again" to resend the requests.
+                </p>
                 <p style="font-size: 14px; opacity: 0.8; margin-top: 15px;">
                     Swipe right or press <kbd style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">Y</kbd> to approve
                     <br>
@@ -571,6 +574,12 @@
                 <li>Check that your authorization server is running</li>
                 <li>Verify the URL matches your server's tenant ID</li>
                 <li>Ensure you have network connectivity</li>
+            </ul>
+            <p>If requests aren't showing up:</p>
+            <ul>
+                <li><strong>If you opened this swipe UI AFTER loading the Gateway page:</strong> Refresh the Gateway page or click "Try Again" to resend requests</li>
+                <li>Make sure you see "✓ Connected" status above</li>
+                <li>Check the Gateway page is loaded and making requests</li>
             </ul>
         </div>
     </div>
@@ -628,13 +637,9 @@
                 tenantID = pathParts[pathParts.length - 1];
 
                 log('Initialized with tenant:', tenantID);
-                
-                // Set dynamic curl example
-                const protocol = window.location.protocol;
-                const host = window.location.host;
                 const exampleEl = document.getElementById('curlExample');
                 if (exampleEl) {
-                    exampleEl.textContent = `curl ${protocol}//${host}/`;
+                    exampleEl.textContent = "open http://localhost:8080/";
                 }
                 
                 return true;
@@ -815,6 +820,9 @@
                             <div class="command-label">Example:</div>
                             open http://localhost:8080/
                         </div>
+                        <p style="font-size: 14px; opacity: 0.9; margin-top: 15px; background: rgba(255,255,255,0.15); padding: 12px; border-radius: 8px; border-left: 3px solid #4ade80;">
+                            💡 <strong>Tip:</strong> If you already loaded the Gateway page before opening this swipe UI, refresh the Gateway page or click "Try Again" to resend the requests.
+                        </p>
                         <p style="font-size: 14px; opacity: 0.8; margin-top: 15px;">
                             Swipe right or press <kbd style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">Y</kbd> to approve
                             <br>

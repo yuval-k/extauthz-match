@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: extauth-server
-          image: gcr.io/solo-public/extauth-server:0.7
+          image: gcr.io/solo-public/extauth-server:0.8
           imagePullPolicy: IfNotPresent
           env:
             - name: LOG_LEVEL
