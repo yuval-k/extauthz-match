@@ -221,6 +221,21 @@ go fmt ./...
 └── docker-compose.yml
 ```
 
+## Clean Up
+
+Run the following commands:
+
+```bash
+kubectl delete configmap backend-html
+kubectl delete -f https://raw.githubusercontent.com/yuval-k/extauthz-match/refs/heads/master/k8s/allinone.yaml
+```
+
 ## License
 
 MIT
+
+---
+<div align="center">
+    <p>💕 Made with love by the kgateway/agentgateway community 💕 </p>
+</div>
+
